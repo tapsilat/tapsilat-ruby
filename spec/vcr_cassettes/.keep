@@ -1,0 +1,2 @@
+# This file ensures the vcr_cassettes directory is tracked by git
+# VCR cassettes are used for recording HTTP interactions in tests 
