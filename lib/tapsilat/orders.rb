@@ -57,93 +57,85 @@ module Tapsilat
 
     def create(order_data)
       with_retry do
-        begin
-          validated_data = validate_order_data(order_data)
-          response = @client.post('/orders', body: validated_data.to_json)
-          
-          # Check if response indicates success
-          if response && response['status'] != 'error'
-            OrderResponse.new(response)
-          else
-            # Handle API errors returned in response
-            error_message = response&.dig('message') || response&.dig('error_message') || 'Order creation failed'
-            raise OrderCreationError, error_message
-          end
-        rescue JSON::GeneratorError => e
-          raise OrderValidationError, "Invalid order data - JSON serialization failed: #{e.message}"
-        rescue OrderValidationError
-          raise # Re-raise validation errors as-is
-        rescue Tapsilat::Error => e
-          # Re-raise API errors with more context
-          case e.message
-          when /Unauthorized/
-            raise OrderAPIError, "Order creation failed - Invalid API credentials: #{e.message}"
-          when /Resource not found/
-            raise OrderAPIError, "Order creation failed - Invalid endpoint: #{e.message}"
-          when /Server error/
-            raise OrderAPIError, "Order creation failed - Server error: #{e.message}"
-          else
-            raise OrderCreationError, "Order creation failed: #{e.message}"
-          end
-        rescue StandardError => e
-          # Don't catch timeout errors here, let with_retry handle them
-          if e.message.include?('execution expired') || e.message.include?('timeout') || e.is_a?(Timeout::Error)
-            raise e # Re-raise timeout errors so with_retry can handle them
-          else
-            # Catch any other unexpected errors
-            raise OrderError, "Unexpected error during order creation: #{e.message}"
-          end
+        validated_data = validate_order_data(order_data)
+        response = @client.post('/orders', body: validated_data.to_json)
+
+        # Check if response indicates success
+        if response && response['status'] != 'error'
+          OrderResponse.new(response)
+        else
+          # Handle API errors returned in response
+          error_message = response&.dig('message') || response&.dig('error_message') || 'Order creation failed'
+          raise OrderCreationError, error_message
         end
+      rescue JSON::GeneratorError => e
+        raise OrderValidationError, "Invalid order data - JSON serialization failed: #{e.message}"
+      rescue OrderValidationError
+        raise # Re-raise validation errors as-is
+      rescue Tapsilat::Error => e
+        # Re-raise API errors with more context
+        case e.message
+        when /Unauthorized/
+          raise OrderAPIError, "Order creation failed - Invalid API credentials: #{e.message}"
+        when /Resource not found/
+          raise OrderAPIError, "Order creation failed - Invalid endpoint: #{e.message}"
+        when /Server error/
+          raise OrderAPIError, "Order creation failed - Server error: #{e.message}"
+        else
+          raise OrderCreationError, "Order creation failed: #{e.message}"
+        end
+      rescue StandardError => e
+        # Don't catch timeout errors here, let with_retry handle them
+        raise e if e.message.include?('execution expired') || e.message.include?('timeout') || e.is_a?(Timeout::Error)
+
+        # Re-raise timeout errors so with_retry can handle them
+
+        # Catch any other unexpected errors
+        raise OrderError, "Unexpected error during order creation: #{e.message}"
       end
     end
 
     def get(order_id)
       with_retry do
-        begin
-          raise OrderValidationError, "Order ID cannot be nil or empty" if order_id.nil? || order_id.to_s.strip.empty?
-          
-          response = @client.get("/orders/#{order_id}")
-          OrderResponse.new(response) if response
-        rescue OrderValidationError
-          raise # Re-raise validation errors as-is
-        rescue Tapsilat::Error => e
-          case e.message
-          when /Resource not found/
-            raise OrderNotFoundError, "Order with ID '#{order_id}' not found"
-          when /Unauthorized/
-            raise OrderAPIError, "Failed to fetch order - Invalid API credentials: #{e.message}"
-          else
-            raise OrderAPIError, "Failed to fetch order: #{e.message}"
-          end
-        rescue StandardError => e
-          raise OrderError, "Unexpected error while fetching order: #{e.message}"
+        raise OrderValidationError, 'Order ID cannot be nil or empty' if order_id.nil? || order_id.to_s.strip.empty?
+
+        response = @client.get("/orders/#{order_id}")
+        OrderResponse.new(response) if response
+      rescue OrderValidationError
+        raise # Re-raise validation errors as-is
+      rescue Tapsilat::Error => e
+        case e.message
+        when /Resource not found/
+          raise OrderNotFoundError, "Order with ID '#{order_id}' not found"
+        when /Unauthorized/
+          raise OrderAPIError, "Failed to fetch order - Invalid API credentials: #{e.message}"
+        else
+          raise OrderAPIError, "Failed to fetch order: #{e.message}"
         end
+      rescue StandardError => e
+        raise OrderError, "Unexpected error while fetching order: #{e.message}"
       end
     end
 
     def list(params = {})
-      begin
-        with_retry do
-          # Build query parameters with defaults
-          query_params = build_list_params(params)
-          response = @client.get('/orders/list', query: query_params)
-          OrderListResponse.new(response) if response
-        end
-      rescue Tapsilat::Error => e
-        case e.message
-        when /Unauthorized/
-          raise OrderAPIError, "Invalid API credentials"
-        else
-          raise OrderAPIError, "Failed to list orders: #{e.message}"
-        end
-      rescue StandardError => e
-        # Check if this looks like a WebMock/test error that contains actual error info
-        if e.message.include?('Unauthorized') || e.message.include?('401')
-          raise OrderAPIError, "Invalid API credentials"
-        else
-          raise OrderError, "Unexpected error while listing orders: #{e.message}"
-        end
+      with_retry do
+        # Build query parameters with defaults
+        query_params = build_list_params(params)
+        response = @client.get('/orders/list', query: query_params)
+        OrderListResponse.new(response) if response
       end
+    rescue Tapsilat::Error => e
+      case e.message
+      when /Unauthorized/
+        raise OrderAPIError, 'Invalid API credentials'
+      else
+        raise OrderAPIError, "Failed to list orders: #{e.message}"
+      end
+    rescue StandardError => e
+      # Check if this looks like a WebMock/test error that contains actual error info
+      raise OrderAPIError, 'Invalid API credentials' if e.message.include?('Unauthorized') || e.message.include?('401')
+
+      raise OrderError, "Unexpected error while listing orders: #{e.message}"
     end
 
     # Helper method to get status text from status code
@@ -166,8 +158,8 @@ module Tapsilat
       {
         locale: locale,
         amount: amount.to_f,
-        paid_amount: options[:paid_amount]&.to_f || 0.0,
-        tax_amount: options[:tax_amount]&.to_f || 0.0,
+        paid_amount: options[:paid_amount].to_f,
+        tax_amount: options[:tax_amount].to_f,
         currency: currency,
         three_d_force: options[:three_d_force] || false,
         enabled_installments: options[:enabled_installments] || [1],
@@ -221,12 +213,15 @@ module Tapsilat
     end
 
     def validate_amount(amount)
-      raise OrderValidationError, "Amount must be a positive number" unless amount.is_a?(Numeric) && amount > 0
+      raise OrderValidationError, 'Amount must be a positive number' unless amount.is_a?(Numeric) && amount.positive?
     end
 
     def validate_currency(currency)
       valid_currencies = %w[TRY USD EUR GBP]
-      raise OrderValidationError, "Invalid currency. Must be one of: #{valid_currencies.join(', ')}" unless valid_currencies.include?(currency.to_s.upcase)
+      return if valid_currencies.include?(currency.to_s.upcase)
+
+      raise OrderValidationError,
+            "Invalid currency. Must be one of: #{valid_currencies.join(', ')}"
     end
 
     def validate_buyer_data(buyer)
@@ -234,22 +229,29 @@ module Tapsilat
       required_buyer_fields.each do |field|
         raise OrderValidationError, "Missing required buyer field: #{field}" unless buyer[field]
       end
-      
+
       # Basic email validation
       email_regex = /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z]+)*\z/i
-      raise OrderValidationError, "Invalid email format" unless buyer[:email].match?(email_regex)
+      raise OrderValidationError, 'Invalid email format' unless buyer[:email].match?(email_regex)
     end
 
     def validate_basket_items(basket_items)
-      raise OrderValidationError, "Basket items cannot be empty" if basket_items.empty?
-      
+      raise OrderValidationError, 'Basket items cannot be empty' if basket_items.empty?
+
       basket_items.each_with_index do |item, index|
         raise OrderValidationError, "Basket item #{index + 1}: missing required field 'id'" unless item[:id]
         raise OrderValidationError, "Basket item #{index + 1}: missing required field 'name'" unless item[:name]
         raise OrderValidationError, "Basket item #{index + 1}: missing required field 'price'" unless item[:price]
         raise OrderValidationError, "Basket item #{index + 1}: missing required field 'quantity'" unless item[:quantity]
-        raise OrderValidationError, "Basket item #{index + 1}: price must be a positive number" unless item[:price].is_a?(Numeric) && item[:price] > 0
-        raise OrderValidationError, "Basket item #{index + 1}: quantity must be a positive integer" unless item[:quantity].is_a?(Integer) && item[:quantity] > 0
+
+        unless item[:price].is_a?(Numeric) && item[:price].positive?
+          raise OrderValidationError,
+                "Basket item #{index + 1}: price must be a positive number"
+        end
+        unless item[:quantity].is_a?(Integer) && item[:quantity].positive?
+          raise OrderValidationError,
+                "Basket item #{index + 1}: quantity must be a positive integer"
+        end
       end
     end
 
@@ -314,13 +316,13 @@ module Tapsilat
         sub_merchant_key: item_data[:sub_merchant_key],
         sub_merchant_price: item_data[:sub_merchant_price],
         coupon: item_data[:coupon],
-        coupon_discount: item_data[:coupon_discount]&.to_f || 0.0,
+        coupon_discount: item_data[:coupon_discount].to_f,
         quantity_float: item_data[:quantity_float]&.to_f || item_data[:quantity].to_f,
         quantity_unit: item_data[:quantity_unit] || 'unit',
-        paid_amount: item_data[:paid_amount]&.to_f || 0.0,
+        paid_amount: item_data[:paid_amount].to_f,
         data: item_data[:data],
         payer: item_data[:payer] ? build_payer(item_data[:payer]) : nil,
-        commission_amount: item_data[:commission_amount]&.to_f || 0.0
+        commission_amount: item_data[:commission_amount].to_f
       }.compact
     end
 
@@ -355,31 +357,26 @@ module Tapsilat
     # Retry mechanism for transient network errors
     def with_retry(max_attempts: MAX_RETRIES, delay: RETRY_DELAY)
       attempts = 0
-      
+
       begin
         attempts += 1
         yield
       rescue Tapsilat::Error, OrderAPIError, OrderValidationError, OrderCreationError, OrderNotFoundError
         raise # Don't retry API errors and validation errors, let them bubble up
       rescue *RETRYABLE_ERRORS => e
-        if attempts < max_attempts
-          sleep(delay * attempts) # Exponential backoff
-          retry
-        else
-          raise OrderError, "Max retry attempts (#{max_attempts}) exceeded: #{e.message}"
-        end
+        raise OrderError, "Max retry attempts (#{max_attempts}) exceeded: #{e.message}" unless attempts < max_attempts
+
+        sleep(delay * attempts) # Exponential backoff
+        retry
       rescue StandardError => e
         # Check if this is a timeout-like error that should be retried
-        if e.message.include?('execution expired') || e.message.include?('timeout')
-          if attempts < max_attempts
-            sleep(delay * attempts) # Exponential backoff
-            retry
-          else
-            raise OrderError, "Max retry attempts (#{max_attempts}) exceeded: #{e.message}"
-          end
-        else
-          raise # Re-raise non-timeout StandardErrors
-        end
+        raise unless e.message.include?('execution expired') || e.message.include?('timeout')
+        raise OrderError, "Max retry attempts (#{max_attempts}) exceeded: #{e.message}" unless attempts < max_attempts
+
+        sleep(delay * attempts) # Exponential backoff
+        retry
+
+        # Re-raise non-timeout StandardErrors
       end
     end
   end
@@ -526,12 +523,12 @@ module Tapsilat
 
     # Get total refundable amount from basket items
     def total_refundable_amount
-      basket_items.sum { |item| item['refundable_amount']&.to_f || 0.0 }
+      basket_items.sum { |item| item['refundable_amount'].to_f }
     end
 
     # Get total paid amount from basket items
     def total_paid_amount_from_items
-      basket_items.sum { |item| item['paid_amount']&.to_f || 0.0 }
+      basket_items.sum { |item| item['paid_amount'].to_f }
     end
 
     def to_h
@@ -567,7 +564,7 @@ module Tapsilat
     end
 
     def total
-      @data['total']&.to_i || 0
+      @data['total'].to_i
     end
 
     def page
@@ -579,7 +576,7 @@ module Tapsilat
     end
 
     def total_pages
-      @data['total_pages']&.to_i || 0
+      @data['total_pages'].to_i
     end
 
     # Helper methods for pagination
