@@ -1,6 +1,4 @@
 require 'httparty'
-require_relative 'tapsilat/client'
-require_relative 'tapsilat/orders'
 require_relative 'tapsilat/version'
 
 module Tapsilat
@@ -24,3 +22,6 @@ module Tapsilat
     end
   end
 end
+
+require_relative 'tapsilat/client'
+require_relative 'tapsilat/orders'

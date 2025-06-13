@@ -340,6 +340,7 @@ RSpec.describe Tapsilat::Orders, :configured do
     context 'when API returns 401 unauthorized' do
       before do
         stub_request(:get, 'https://api.tapsilat.com/orders/list')
+          .with(query: { page: 1, per_page: 10 })
           .to_return(status: 401)
       end
 
