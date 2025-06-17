@@ -29,7 +29,7 @@ RSpec.configure do |config|
   # Helper method to configure Tapsilat for tests with real API
   config.before(:each, :configured) do
     Tapsilat.configure do |config|
-      config.base_url = 'https://acquiring.tapsilat.dev/api/v1'
+      config.base_url = 'https://panel.tapsilat.dev/api/v1'
       config.api_token = ENV['TAPSILAT_API_TOKEN'] || 'your-real-api-token-here'
     end
   end

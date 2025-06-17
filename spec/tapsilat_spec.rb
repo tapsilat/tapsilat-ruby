@@ -6,11 +6,11 @@ RSpec.describe Tapsilat do
   describe '.configure' do
     it 'allows configuration of base_url and api_token' do
       described_class.configure do |config|
-        config.base_url = 'https://acquiring.tapsilat.dev/api/v1'
+        config.base_url = 'https://panel.tapsilat.dev/api/v1'
         config.api_token = 'test-token'
       end
 
-      expect(described_class.base_url).to eq('https://acquiring.tapsilat.dev/api/v1')
+      expect(described_class.base_url).to eq('https://panel.tapsilat.dev/api/v1')
       expect(described_class.api_token).to eq('test-token')
     end
   end
@@ -19,7 +19,7 @@ RSpec.describe Tapsilat do
     context 'when both base_url and api_token are set' do
       before do
         described_class.configure do |config|
-          config.base_url = 'https://acquiring.tapsilat.dev/api/v1'
+          config.base_url = 'https://panel.tapsilat.dev/api/v1'
           config.api_token = 'test-token'
         end
       end
@@ -44,7 +44,7 @@ RSpec.describe Tapsilat do
     context 'when api_token is missing' do
       before do
         described_class.configure do |config|
-          config.base_url = 'https://acquiring.tapsilat.dev/api/v1'
+          config.base_url = 'https://panel.tapsilat.dev/api/v1'
         end
       end
 
@@ -57,7 +57,7 @@ RSpec.describe Tapsilat do
   describe '.reset!' do
     it 'clears the configuration' do
       described_class.configure do |config|
-        config.base_url = 'https://acquiring.tapsilat.dev/api/v1'
+        config.base_url = 'https://panel.tapsilat.dev/api/v1'
         config.api_token = 'test-token'
       end
 

@@ -24,8 +24,8 @@ Configure the client with your API credentials:
 
 ```ruby
 Tapsilat.configure do |config|
-  config.base_url = 'https://api.tapsilat.com'
-  config.api_token = 'your-api-token'
+  config.base_url = ENV['TAPSILAT_BASE_URL']
+  config.api_token = ENV['TAPSILAT_API_TOKEN']
 end
 ```
 
