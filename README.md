@@ -1,4 +1,4 @@
-# Tapsilat Ruby Client
+# Tapsilat Ruby Client [![Gem Version](https://badge.fury.io/rb/tapsilat.svg?icon_color=%23ff0002)](https://badge.fury.io/rb/tapsilat)
 
 A Ruby client for the Tapsilat API.
 
