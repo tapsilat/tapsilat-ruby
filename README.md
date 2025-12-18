@@ -66,11 +66,63 @@ order = client.orders.get(order_id)
 puts order.status_text
 
 # List orders
-orders = client.orders.list
+orders = client.orders.list(page: 1, per_page: 10)
 orders.rows.each do |order|
   puts "#{order.reference_id}: #{order.status_text}"
 end
+
+# Get order status
+status = client.orders.get_status(order_id)
+puts status.status
 ```
+
+### Subscriptions
+
+```ruby
+# Create a subscription
+subscription = client.subscriptions.create(
+  title: 'Monthly Plan',
+  amount: 99.99,
+  currency: 'TRY',
+  period: 30,
+  user: {
+    first_name: 'John',
+    last_name: 'Doe',
+    email: 'john@example.com'
+  }
+)
+
+# Get subscription details
+details = client.subscriptions.get(reference_id: subscription['reference_id'])
+
+# List subscriptions
+subscriptions = client.subscriptions.list(page: 1, per_page: 10)
+
+# Cancel a subscription
+client.subscriptions.cancel(reference_id: subscription['reference_id'])
+
+# Get redirect URL
+redirect = client.subscriptions.redirect(subscription_id: subscription['reference_id'])
+puts redirect['url']
+```
+
+### Organization Settings
+
+```ruby
+# Get organization settings
+settings = client.organization.settings
+puts "Organization: #{settings['organization_name']}"
+puts "Currency: #{settings['currency']}"
+```
+
+### Health Check
+
+```ruby
+# Check API health
+health = client.health.check
+puts "API Status: #{health['status']}"
+```
+
 
 ## Error Handling
 
@@ -119,13 +171,41 @@ The client automatically retries transient network errors (timeouts, connection 
 
 ## Features
 
-- Order creation and management
-- Built-in validation and error handling
-- Automatic retry mechanism for network errors
-- Comprehensive error types for different failure scenarios
-- Pagination support for order listings
-- Response objects with convenient helper methods
-- Full order status tracking
+- **Orders**: Full order lifecycle management
+  - Order creation with comprehensive validation
+  - Order retrieval and status tracking
+  - Order listing with pagination
+  - Order status queries
+- **Subscriptions**: Complete subscription management
+  - Create recurring subscriptions
+  - Get subscription details
+  - List subscriptions with pagination
+  - Cancel subscriptions
+  - Get redirect URLs for subscription payments
+- **Organization**: Organization settings and configuration
+  - Fetch organization settings
+  - Get merchant configuration
+- **Health Check**: API health monitoring
+  - Verify API availability and status
+- **Error Handling**: Built-in validation and comprehensive error types
+- **Retry Mechanism**: Automatic retry for transient network errors
+- **Response Models**: Convenient wrapper objects with helper methods
+- **Pagination Support**: Easy pagination for list endpoints
+- **Full Test Coverage**: Comprehensive RSpec test suite with WebMock
+
+## Testing
+
+Run the test suite:
+
+```bash
+bundle exec rspec
+```
+
+Run tests with coverage:
+
+```bash
+COVERAGE=true bundle exec rspec
+```
 
 ## Requirements
 
