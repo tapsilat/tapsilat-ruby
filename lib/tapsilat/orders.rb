@@ -178,6 +178,22 @@ module Tapsilat
       end
     end
 
+    def get_by_conversation_id(conversation_id)
+      with_retry do
+        raise OrderValidationError, 'Conversation ID cannot be nil or empty' if conversation_id.nil? || conversation_id.to_s.strip.empty?
+
+        response = @client.get("/order/conversation/#{conversation_id}")
+        OrderResponse.new(response) if response
+      end
+    rescue Tapsilat::Error => e
+      case e.message
+      when /Resource not found/
+        raise OrderNotFoundError, "Order with conversation ID '#{conversation_id}' not found"
+      else
+        raise OrderAPIError, "Failed to fetch order: #{e.message}"
+      end
+    end
+
     def list(params = {})
       with_retry do
         # Build query parameters with defaults
@@ -197,6 +213,120 @@ module Tapsilat
       raise OrderAPIError, 'Invalid API credentials' if e.message.include?('Unauthorized') || e.message.include?('401')
 
       raise OrderError, "Unexpected error while listing orders: #{e.message}"
+    end
+
+    def submerchants(page: 1, per_page: 10)
+      with_retry do
+        response = @client.get('/order/submerchants', query: { page: page, per_page: per_page })
+        response
+      end
+    end
+
+    def cancel(order_id)
+      with_retry do
+        raise OrderValidationError, 'Order ID cannot be nil or empty' if order_id.nil? || order_id.to_s.strip.empty?
+
+        @client.post('/order/cancel', body: { reference_id: order_id }.to_json)
+      end
+    end
+
+    def refund(order_id, amount, **options)
+      with_retry do
+        raise OrderValidationError, 'Order ID cannot be nil or empty' if order_id.nil? || order_id.to_s.strip.empty?
+        raise OrderValidationError, 'Amount must be positive' unless amount.to_f > 0
+
+        payload = {
+          reference_id: order_id,
+          amount: amount.to_f,
+          order_item_id: options[:order_item_id],
+          order_item_payment_id: options[:order_item_payment_id]
+        }.compact
+
+        @client.post('/order/refund', body: payload.to_json)
+      end
+    end
+
+    def refund_all(order_id)
+      with_retry do
+        raise OrderValidationError, 'Order ID cannot be nil or empty' if order_id.nil? || order_id.to_s.strip.empty?
+
+        @client.post('/order/refund-all', body: { reference_id: order_id }.to_json)
+      end
+    end
+
+    def get_payment_details(order_id, conversation_id: nil)
+      with_retry do
+        if conversation_id
+          @client.post('/order/payment-details', body: { reference_id: order_id, conversation_id: conversation_id }.to_json)
+        else
+          @client.get("/order/#{order_id}/payment-details")
+        end
+      end
+    end
+
+    def get_transactions(order_id)
+      with_retry do
+        raise OrderValidationError, 'Order ID cannot be nil or empty' if order_id.nil? || order_id.to_s.strip.empty?
+
+        @client.get("/order/#{order_id}/transactions")
+      end
+    end
+
+    def terminate(order_id)
+      with_retry do
+        raise OrderValidationError, 'Order ID cannot be nil or empty' if order_id.nil? || order_id.to_s.strip.empty?
+
+        @client.post('/order/terminate', body: { reference_id: order_id }.to_json)
+      end
+    end
+
+    def manual_callback(order_id, conversation_id: nil)
+      with_retry do
+        raise OrderValidationError, 'Order ID cannot be nil or empty' if order_id.nil? || order_id.to_s.strip.empty?
+
+        payload = { reference_id: order_id }
+        payload[:conversation_id] = conversation_id if conversation_id
+        @client.post('/order/manual-callback', body: payload.to_json)
+      end
+    end
+
+    # Payment Term Methods
+    def get_term(term_reference_id)
+      with_retry do
+        @client.get("/order/term/#{term_reference_id}")
+      end
+    end
+
+    def create_term(term_data)
+      with_retry do
+        @client.post('/order/term', body: term_data.to_json)
+      end
+    end
+
+    def delete_term(order_id, term_reference_id)
+      with_retry do
+        @client.post('/order/term/delete', body: { order_id: order_id, term_reference_id: term_reference_id }.to_json)
+      end
+    end
+
+    def update_term(term_data)
+      with_retry do
+        @client.post('/order/term/update', body: term_data.to_json)
+      end
+    end
+
+    def refund_term(refund_data)
+      with_retry do
+        @client.post('/order/term/refund', body: refund_data.to_json)
+      end
+    end
+
+    def terminate_term(term_reference_id, reason: nil)
+      with_retry do
+        payload = { term_reference_id: term_reference_id }
+        payload[:reason] = reason if reason
+        @client.post('/order/term/terminate', body: payload.to_json)
+      end
     end
 
     # Helper method to get status text from status code

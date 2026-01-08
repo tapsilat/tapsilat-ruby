@@ -17,6 +17,18 @@ module Tapsilat
       @orders ||= Orders.new(self)
     end
 
+    def subscriptions
+      @subscriptions ||= Subscriptions.new(self)
+    end
+
+    def organization
+      @organization ||= Organization.new(self)
+    end
+
+    def health
+      @health ||= Health.new(self)
+    end
+
     def get(path, options = {})
       handle_response(self.class.get(path, options))
     end

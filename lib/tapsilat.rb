@@ -25,3 +25,6 @@ end
 
 require_relative 'tapsilat/client'
 require_relative 'tapsilat/orders'
+require_relative 'tapsilat/subscriptions'
+require_relative 'tapsilat/organization'
+require_relative 'tapsilat/health'
