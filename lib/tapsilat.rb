@@ -6,7 +6,21 @@ module Tapsilat
   class ConfigurationError < Error; end
 
   class << self
-    attr_accessor :base_url, :api_token
+    def base_url
+      @base_url ||= ENV['TAPSILAT_BASE_URL'] || 'https://panel.tapsilat.dev/api/v1'
+    end
+
+    def base_url=(value)
+      @base_url = value
+    end
+
+    def api_token
+      @api_token ||= ENV['TAPSILAT_API_KEY'] || ENV['TAPSILAT_API_TOKEN']
+    end
+
+    def api_token=(value)
+      @api_token = value
+    end
 
     def configure
       yield self
@@ -23,8 +37,6 @@ module Tapsilat
   end
 end
 
+require_relative 'tapsilat/api'
+require_relative 'tapsilat/models'
 require_relative 'tapsilat/client'
-require_relative 'tapsilat/orders'
-require_relative 'tapsilat/subscriptions'
-require_relative 'tapsilat/organization'
-require_relative 'tapsilat/health'

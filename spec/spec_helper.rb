@@ -11,7 +11,7 @@ require 'tapsilat'
 require 'rspec'
 require 'webmock/rspec'
 
-WebMock.disable_net_connect!(allow_localhost: true)
+WebMock.allow_net_connect!
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -33,15 +33,15 @@ RSpec.configure do |config|
   config.before(:each, :configured) do
     Tapsilat.configure do |config|
       config.base_url = 'https://panel.tapsilat.dev/api/v1'
-      config.api_token = ENV['TAPSILAT_API_TOKEN'] || 'your-real-api-token-here'
+      config.api_token = ENV['TAPSILAT_API_TOKEN'] || ENV['TAPSILAT_API_KEY'] || 'your-real-api-token-here'
     end
   end
 
   # All tests run against live API
   # Ensure API token is available for all tests
   config.before(:suite) do
-    if ENV['TAPSILAT_API_TOKEN'].nil?
-      puts 'Warning: TAPSILAT_API_TOKEN not set. Tests may fail without proper API credentials.'
+    if ENV['TAPSILAT_API_TOKEN'].nil? && ENV['TAPSILAT_API_KEY'].nil?
+      puts 'Warning: TAPSILAT_API_TOKEN/KEY not set. Tests may fail without proper API credentials.'
     end
   end
 end

@@ -20,12 +20,16 @@ Or install it yourself as:
 
 ## Usage
 
-Configure the client with your API credentials:
+Configure the client with your API credentials.
+
+The client automatically reads `TAPSILAT_API_KEY` (or `TAPSILAT_API_TOKEN`) and `TAPSILAT_BASE_URL` from your environment variables.
+
+Alternatively, you can configure it functionality:
 
 ```ruby
 Tapsilat.configure do |config|
-  config.base_url = ENV['TAPSILAT_BASE_URL']
-  config.api_token = ENV['TAPSILAT_API_TOKEN']
+  config.base_url = 'https://panel.tapsilat.dev/api/v1'
+  config.api_token = 'your-token'
 end
 ```
 
