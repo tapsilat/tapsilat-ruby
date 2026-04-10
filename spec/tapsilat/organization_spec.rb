@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-RSpec.describe Tapsilat::Organization do
+RSpec.describe Tapsilat::Resource::Organization do
   let(:client) { Tapsilat::Client.new }
-  let(:organization) { described_class.new(client) }
+  let(:organization) { client.organization }
 
   before do
     Tapsilat.configure do |config|

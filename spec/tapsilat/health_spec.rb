@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-RSpec.describe Tapsilat::Health do
+RSpec.describe Tapsilat::Resource::Health do
   let(:client) { Tapsilat::Client.new }
-  let(:health) { described_class.new(client) }
+  let(:health) { client.health }
 
   before do
     Tapsilat.configure do |config|

@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-RSpec.describe Tapsilat::Subscriptions do
+RSpec.describe Tapsilat::Resource::Subscription do
   let(:client) { Tapsilat::Client.new }
-  let(:subscriptions) { described_class.new(client) }
+  let(:subscriptions) { client.subscriptions }
 
   before do
     Tapsilat.configure do |config|
@@ -91,14 +91,16 @@ RSpec.describe Tapsilat::Subscriptions do
         )
 
       result = subscriptions.create(
-        title: 'Monthly Plan',
-        amount: 100.0,
-        currency: 'TRY',
-        period: 30
+        Tapsilat::SubscriptionCreateDTO.new(
+          title: 'Monthly Plan',
+          amount: 100.0,
+          currency: 'TRY',
+          period: 30
+        )
       )
 
-      expect(result['reference_id']).to eq('sub-ref-new')
-      expect(result['code']).to eq(100)
+      expect(result.reference_id).to eq('sub-ref-new')
+      expect(result.code).to eq(100)
     end
   end
 

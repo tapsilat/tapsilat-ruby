@@ -286,3 +286,4 @@ RSpec.describe Tapsilat::OrderResponse do
     end
   end
 end
+
