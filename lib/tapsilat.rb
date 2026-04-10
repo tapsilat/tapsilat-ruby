@@ -4,6 +4,22 @@ require_relative 'tapsilat/version'
 module Tapsilat
   class Error < StandardError; end
   class ConfigurationError < Error; end
+  class APIException < Error
+    attr_reader :status_code, :api_code, :error_msg
+
+    def initialize(status_code, api_code, error_msg)
+      @status_code = status_code
+      @api_code = api_code
+      @error_msg = error_msg
+      super("HTTP #{status_code} [API #{api_code}]: #{error_msg}")
+    end
+  end
+
+  # Legacy Error Aliases for compatibility with existing tests
+  class OrderAPIError < Error; end
+  class OrderValidationError < OrderAPIError; end
+  class OrderNotFoundError < OrderAPIError; end
+  class SubscriptionAPIError < Error; end
 
   class << self
     def base_url
