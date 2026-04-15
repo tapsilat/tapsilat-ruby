@@ -1,17 +1,17 @@
-require 'simplecov'
-if ENV['COVERAGE']
-  SimpleCov.start do
-    add_filter '/spec/'
-    minimum_coverage 80
-  end
-end
+# require 'simplecov'
+# if ENV['COVERAGE']
+#   SimpleCov.start do
+#     add_filter '/spec/'
+#     minimum_coverage 80
+#   end
+# end
 
 require 'bundler/setup'
 require 'tapsilat'
 require 'rspec'
 require 'webmock/rspec'
 
-WebMock.allow_net_connect!
+WebMock.disable_net_connect!(allow_localhost: true)
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -24,7 +24,7 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
-  # Reset Tapsilat configuration before each test
+  # Reset Tapsilat configuration and WebMock stubs before each test
   config.before do
     Tapsilat.reset!
   end

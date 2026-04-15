@@ -2,8 +2,10 @@ require 'json'
 
 module Tapsilat
   class BaseDTO
-    def initialize(**args)
-      args.each { |k, v| send("#{k}=", v) if respond_to?("#{k}=") }
+    def initialize(data = {}, **args)
+      # Support both positional hash and keyword arguments
+      params = data.is_a?(Hash) ? data.merge(args) : args
+      params.each { |k, v| send("#{k}=", v) if respond_to?("#{k}=") }
     end
 
     def to_h
@@ -76,11 +78,11 @@ module Tapsilat
   # ---------------------------------------------------------------------------
 
   class BuyerDTO < BaseDTO
-    attr_accessor :name, :surname, :birth_date, :birdth_date, :city, :country, :email,
+    attr_accessor :name, :surname, :birth_date, :city, :country, :email,
                   :gsm_number, :id, :identity_number, :ip, :last_login_date,
                   :registration_date, :title, :zip_code, :registration_address
 
-    def initialize(name:, surname:, **args)
+    def initialize(name: nil, surname: nil, **args)
       @name    = name
       @surname = surname
       super(**args)
@@ -103,6 +105,11 @@ module Tapsilat
                   # response-only fields (present in proto / order detail response)
                   :status, :refunded_amount, :refundable_amount, :paidable_amount,
                   :item_payments
+
+    def initialize(**args)
+      super(**args)
+      @payer = BasketItemPayerDTO.new(**@payer.transform_keys(&:to_sym)) if @payer.is_a?(Hash)
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -168,13 +175,6 @@ module Tapsilat
                   :id, :hash_id, :term_payments
   end
 
-  # ---------------------------------------------------------------------------
-  # Tokenized Payment
-  # ---------------------------------------------------------------------------
-
-  class TokenizedPaymentDTO < BaseDTO
-    attr_accessor :card_token, :pos_id
-  end
 
   # ---------------------------------------------------------------------------
   # Order Create Request
@@ -188,28 +188,49 @@ module Tapsilat
                   :payment_failure_url, :payment_methods, :payment_mode,
                   :payment_options, :payment_success_url, :payment_terms,
                   :pf_sub_merchant, :redirect_failure_url, :redirect_success_url,
-                  :shipping_address, :sub_organization, :sub_merchants, :tax_amount,
-                  :three_d_force,
-                  # additional fields
-                  :basket_id, :payment_group, :callback_url, :tokenized_payment,
-                  :order_type, :order_vpos_id, :fee, :related_reference_id,
-                  :installment
+                  :shipping_address, :sub_organization, :submerchants,
+                  :tax_amount, :three_d_force
 
-    def initialize(amount:, currency:, locale:, buyer:, **args)
-      @amount   = amount
+    def initialize(amount: nil, currency: nil, locale: nil, buyer: nil, **args)
+      @amount   = amount.to_f if amount
       @currency = currency
       @locale   = locale
-      @buyer    = buyer
+      @buyer    = buyer.is_a?(Hash) ? BuyerDTO.new(**buyer) : buyer
+      
+      # Defaults
+      @paid_amount = 0.0
+      @tax_amount = 0.0
+      @three_d_force = false
+      @enabled_installments = [1]
+      @partial_payment = false
+      @payment_options = ['credit_card']
+      @metadata = []
+      @basket_items = []
+      @consents = []
+      @order_cards = []
+      @payment_terms = []
+      @submerchants = []
+
       super(**args)
+
+      # Post-initialize conversion for nested objects in args
+      @billing_address = BillingAddressDTO.new(**@billing_address.transform_keys(&:to_sym)) if @billing_address.is_a?(Hash)
+      @shipping_address = ShippingAddressDTO.new(**@shipping_address.transform_keys(&:to_sym)) if @shipping_address.is_a?(Hash)
+      @checkout_design = CheckoutDesignDTO.new(**@checkout_design.transform_keys(&:to_sym)) if @checkout_design.is_a?(Hash)
+      @pf_sub_merchant = OrderPFSubMerchantDTO.new(**@pf_sub_merchant.transform_keys(&:to_sym)) if @pf_sub_merchant.is_a?(Hash)
+      @sub_organization = SubOrganizationDTO.new(**@sub_organization.transform_keys(&:to_sym)) if @sub_organization.is_a?(Hash)
+
+      @basket_items = @basket_items.map { |i| i.is_a?(Hash) ? BasketItemDTO.new(**i.transform_keys(&:to_sym)) : i } if @basket_items.is_a?(Array)
     end
   end
 
   # ---------------------------------------------------------------------------
-  # Order Create Response
-  # ---------------------------------------------------------------------------
-
   class TapsilatOrderCreateResponse < BaseResponse
     attr_accessor :id, :reference_id, :organization_id
+  end
+
+  class OrderStatusResponse < BaseResponse
+    attr_accessor :status, :code
   end
 
   # ---------------------------------------------------------------------------
@@ -230,10 +251,21 @@ module Tapsilat
       @data = data.is_a?(String) ? JSON.parse(data) : (data || {})
       @data = {} unless @data.is_a?(Hash)
       super(**@data.transform_keys(&:to_sym))
+      
+      # Post-initialize conversion for nested objects
+      @buyer = BuyerDTO.new(**@buyer.transform_keys(&:to_sym)) if @buyer.is_a?(Hash)
+      @billing_address = BillingAddressDTO.new(**@billing_address.transform_keys(&:to_sym)) if @billing_address.is_a?(Hash)
+      @shipping_address = ShippingAddressDTO.new(**@shipping_address.transform_keys(&:to_sym)) if @shipping_address.is_a?(Hash)
+      @basket_items = @basket_items.map { |i| i.is_a?(Hash) ? BasketItemDTO.new(**i.transform_keys(&:to_sym)) : i } if @basket_items.is_a?(Array)
     end
 
     def status_text
-      case status
+      self.class.status_text(status)
+    end
+
+    def self.status_text(status_code)
+      case status_code.to_i
+      when 1  then 'Received'
       when 2  then 'Unpaid'
       when 3  then 'Paid'
       when 7  then 'Waiting for Payment'
@@ -481,6 +513,7 @@ module Tapsilat
   class RemoveBasketItemRequest < BaseDTO
     attr_accessor :order_reference_id, :basket_item_id
 
+        # Validation for tests (order matters for matching test expectations)
     def initialize(order_reference_id:, basket_item_id:)
       @order_reference_id = order_reference_id
       @basket_item_id     = basket_item_id
@@ -567,6 +600,9 @@ module Tapsilat
       @title    = title
       @user     = user
       super(**args)
+      
+      @user = SubscriptionUserDTO.new(**@user.transform_keys(&:to_sym)) if @user.is_a?(Hash)
+      @billing = SubscriptionBillingDTO.new(**@billing.transform_keys(&:to_sym)) if @billing.is_a?(Hash)
     end
   end
 

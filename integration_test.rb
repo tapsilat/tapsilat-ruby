@@ -409,40 +409,6 @@ if order_a_ref
   end
 end
 
-# pay_order — will fail (no card data / unpaid), but we verify the method fires
-if order_a_ref
-  run_test('POST /order/pay (no card — expected error)') do
-    payload = {
-      referenceId:      order_a_ref,
-      fullbin:          '411111111111',
-      bin:              '411111',
-      expiryMonth:      '12',
-      expiryYear:       '2030',
-      cvv:              '000',
-      holderName:       'Ahmet Yilmaz',
-      installmentCount: 1,
-      currency:         'TRY',
-      threeD:           false
-    }
-    api.pay_order(payload)
-  end
-
-  run_test('POST /order/pay-with-wallet (expected error — no wallet)') do
-    payload = {
-      reference_id: order_a_ref,
-      wallet_id:    'non-existent-wallet-000'
-    }
-    api.pay_with_wallet(payload)
-  end
-
-  run_test('POST /order/pay-with-pin (expected error — no pin)') do
-    payload = {
-      reference_id: order_a_ref,
-      pin:          '000000'
-    }
-    api.pay_with_pin(payload)
-  end
-end
 
 # ============================================================================
 # SECTION 4: Order Lifecycle — Scenario B (Basket Item Operations)
@@ -942,12 +908,6 @@ run_test('OrderPFSubMerchantDTO — all fields settable') do
   h
 end
 
-run_test('TokenizedPaymentDTO') do
-  tp = Tapsilat::TokenizedPaymentDTO.new(card_token: 'CT123', pos_id: 'P001')
-  h  = tp.to_h
-  raise 'card_token missing' unless h[:card_token]
-  h
-end
 
 run_test('PaymentTermDTO — all optional fields') do
   pt = Tapsilat::PaymentTermDTO.new(

@@ -23,7 +23,7 @@ module Tapsilat
 
   class << self
     def base_url
-      @base_url ||= ENV['TAPSILAT_BASE_URL'] || 'https://panel.tapsilat.dev/api/v1'
+      @base_url ||= ENV['TAPSILAT_BASE_URL']
     end
 
     def base_url=(value)

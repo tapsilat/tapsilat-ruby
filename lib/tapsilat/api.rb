@@ -37,21 +37,13 @@ module Tapsilat
     def create_order(order_data)
       _make_request('POST', '/order/create', body: order_data)
     end
-
-    def pay_order(payment_data)
-      _make_request('POST', '/order/pay', body: payment_data)
-    end
-
-    def pay_with_wallet(payment_data)
-      _make_request('POST', '/order/pay-with-wallet', body: payment_data)
-    end
-
-    def pay_with_pin(payment_data)
-      _make_request('POST', '/order/pay-with-pin', body: payment_data)
-    end
-
+ 
     def order_accounting(request)
       _make_request('POST', '/order/accounting', body: request)
+    end
+ 
+    def get_organization_settings
+      _make_request('GET', '/organization/settings')
     end
 
     def order_postauth(request)
@@ -331,17 +323,6 @@ module Tapsilat
         error_msg = error_data['error'] || error_data['message'] || response.message
         raise APIException.new(response.code, api_code, error_msg)
       end
-    end
-  end
-
-  class APIException < StandardError
-    attr_reader :status_code, :api_code, :error_msg
-
-    def initialize(status_code, api_code, error_msg)
-      @status_code = status_code
-      @api_code = api_code
-      @error_msg = error_msg
-      super("#{error_msg} (Status: #{status_code}, Code: #{api_code})")
     end
   end
 end
