@@ -105,6 +105,99 @@ module Tapsilat
         payload.merge!(args)
         @api.refund_order(payload)
       end
+
+      def get_transactions(reference_id)
+        @api.get_order_transactions(reference_id)
+      end
+
+      def submerchants(page: 1, per_page: 10)
+        @api.get_order_submerchants(page: page, per_page: per_page)
+      end
+
+      def get_term(term_reference_id)
+        @api.get_order_term(term_reference_id)
+      end
+
+      def create_term(term_data)
+        dto = term_data.is_a?(Hash) ? OrderPaymentTermCreateDTO.new(**term_data.transform_keys(&:to_sym)) : term_data
+        @api.create_order_term(dto.to_h)
+      end
+
+      def delete_term(order_id, term_reference_id)
+        dto = OrderPaymentTermDeleteDTO.new(order_id: order_id, term_reference_id: term_reference_id)
+        @api.delete_order_term(dto.to_h)
+      end
+
+      def update_term(term_data)
+        dto = term_data.is_a?(Hash) ? OrderPaymentTermUpdateDTO.new(**term_data.transform_keys(&:to_sym)) : term_data
+        @api.update_order_term(dto.to_h)
+      end
+
+      def refund_term(term_data)
+        dto = term_data.is_a?(Hash) ? OrderTermRefundRequest.new(**term_data.transform_keys(&:to_sym)) : term_data
+        @api.refund_order_term(dto.to_h)
+      end
+
+      def terminate(reference_id)
+        dto = TerminateRequest.new(reference_id: reference_id)
+        @api.terminate_order(dto.to_h)
+      end
+
+      def manual_callback(reference_id, conversation_id: nil)
+        dto = OrderManualCallbackDTO.new(reference_id: reference_id, conversation_id: conversation_id)
+        @api.manual_callback(dto.to_h)
+      end
+
+      def get_by_conversation_id(conversation_id)
+        response = @api.get_order_by_conversation_id(conversation_id)
+        OrderResponse.new(response)
+      end
+
+      def accounting(order_reference_id)
+        dto = OrderAccountingRequest.new(order_reference_id: order_reference_id)
+        @api.order_accounting(dto.to_h)
+      end
+
+      def postauth(reference_id, amount)
+        dto = OrderPostAuthRequest.new(reference_id: reference_id, amount: amount)
+        @api.order_postauth(dto.to_h)
+      end
+
+      def refund_all(reference_id)
+        dto = RefundAllOrderDTO.new(reference_id: reference_id)
+        @api.refund_all_order(dto.to_h)
+      end
+
+      def payment_details(reference_id, conversation_id: nil)
+        dto = OrderPaymentDetailDTO.new(reference_id: reference_id, conversation_id: conversation_id)
+        @api.get_order_payment_details(dto.to_h)
+      end
+
+      def payment_details_by_id(reference_id)
+        @api.get_order_payment_details_by_id(reference_id)
+      end
+
+      def related_update(reference_id, related_reference_id)
+        dto = OrderRelatedReferenceDTO.new(reference_id: reference_id, related_reference_id: related_reference_id)
+        @api.related_update(dto.to_h)
+      end
+
+      def add_basket_item(order_reference_id, basket_item)
+        basket_item_dto = basket_item.is_a?(Hash) ? BasketItemDTO.new(**basket_item) : basket_item
+        dto = AddBasketItemRequest.new(order_reference_id: order_reference_id, basket_item: basket_item_dto)
+        @api.add_basket_item(dto.to_h)
+      end
+
+      def remove_basket_item(order_reference_id, basket_item_id)
+        dto = RemoveBasketItemRequest.new(order_reference_id: order_reference_id, basket_item_id: basket_item_id)
+        @api.remove_basket_item(dto.to_h)
+      end
+
+      def update_basket_item(order_reference_id, basket_item)
+        basket_item_dto = basket_item.is_a?(Hash) ? BasketItemDTO.new(**basket_item) : basket_item
+        dto = UpdateBasketItemRequest.new(order_reference_id: order_reference_id, basket_item: basket_item_dto)
+        @api.update_basket_item(dto.to_h)
+      end
     end
 
     class Subscription < Base
@@ -143,6 +236,70 @@ module Tapsilat
     class Organization < Base
       def settings
         @api.get_organization_settings
+      end
+
+      def callback
+        @api.get_organization_callback
+      end
+
+      def update_callback(request)
+        dto = request.is_a?(Hash) ? CallbackURLDTO.new(**request) : request
+        @api.update_organization_callback(dto.to_h)
+      end
+
+      def create_business(request)
+        dto = request.is_a?(Hash) ? OrgCreateBusinessRequest.new(**request) : request
+        @api.create_organization_business(dto.to_h)
+      end
+
+      def currencies
+        @api.get_organization_currencies
+      end
+
+      def get_limit_user(user_id)
+        dto = GetUserLimitRequest.new(user_id: user_id)
+        @api.get_organization_limit_user(dto.to_h)
+      end
+
+      def set_limit_user(limit_id, user_id)
+        dto = SetLimitUserRequest.new(limit_id: limit_id, user_id: user_id)
+        @api.set_organization_limit_user(dto.to_h)
+      end
+
+      def limits
+        @api.get_organization_limits
+      end
+
+      def list_vpos(currency_id)
+        dto = GetVposRequest.new(currency_id: currency_id)
+        @api.list_organization_vpos(dto.to_h)
+      end
+
+      def meta(name)
+        @api.get_organization_meta(name)
+      end
+
+      def scopes
+        @api.get_organization_scopes
+      end
+
+      def suborganizations(page: 1, per_page: 10)
+        @api.get_organization_suborganizations(page: page, per_page: per_page)
+      end
+
+      def create_user(request)
+        dto = request.is_a?(Hash) ? OrgCreateUserReq.new(**request) : request
+        @api.create_organization_user(dto.to_h)
+      end
+
+      def verify_user(user_id)
+        dto = OrgUserVerifyReq.new(user_id: user_id)
+        @api.verify_organization_user(dto.to_h)
+      end
+
+      def verify_user_mobile(user_id)
+        dto = OrgUserMobileVerifyReq.new(user_id: user_id)
+        @api.verify_organization_user_mobile(dto.to_h)
       end
 
       def get_suborganization(id)
