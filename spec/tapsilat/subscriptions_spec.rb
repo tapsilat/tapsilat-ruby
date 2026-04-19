@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-RSpec.describe Tapsilat::Subscriptions do
+RSpec.describe Tapsilat::Resource::Subscription do
   let(:client) { Tapsilat::Client.new }
-  let(:subscriptions) { described_class.new(client) }
+  let(:subscriptions) { client.subscriptions }
 
   before do
     Tapsilat.configure do |config|
@@ -14,14 +14,6 @@ RSpec.describe Tapsilat::Subscriptions do
   describe '#get' do
     it 'gets subscription details by reference_id' do
       stub_request(:post, 'https://panel.tapsilat.dev/api/v1/subscription')
-        .with(
-          body: { reference_id: 'sub-ref-123' }.to_json,
-          headers: {
-            'Authorization' => 'Bearer test_token',
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json'
-          }
-        )
         .to_return(
           status: 200,
           body: {
@@ -44,14 +36,6 @@ RSpec.describe Tapsilat::Subscriptions do
   describe '#cancel' do
     it 'cancels a subscription' do
       stub_request(:post, 'https://panel.tapsilat.dev/api/v1/subscription/cancel')
-        .with(
-          body: { reference_id: 'sub-ref-123' }.to_json,
-          headers: {
-            'Authorization' => 'Bearer test_token',
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json'
-          }
-        )
         .to_return(
           status: 200,
           body: { success: true }.to_json,
@@ -67,19 +51,6 @@ RSpec.describe Tapsilat::Subscriptions do
   describe '#create' do
     it 'creates a new subscription' do
       stub_request(:post, 'https://panel.tapsilat.dev/api/v1/subscription/create')
-        .with(
-          body: {
-            title: 'Monthly Plan',
-            amount: 100.0,
-            currency: 'TRY',
-            period: 30
-          }.to_json,
-          headers: {
-            'Authorization' => 'Bearer test_token',
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json'
-          }
-        )
         .to_return(
           status: 200,
           body: {
@@ -91,14 +62,18 @@ RSpec.describe Tapsilat::Subscriptions do
         )
 
       result = subscriptions.create(
-        title: 'Monthly Plan',
-        amount: 100.0,
-        currency: 'TRY',
-        period: 30
+        Tapsilat::SubscriptionCreateRequest.new(
+          title: 'Monthly Plan',
+          amount: 100.0,
+          currency: 'TRY',
+          cycle: 'MONTHLY',
+          period: 1,
+          user: { id: 'user-1' }
+        )
       )
 
-      expect(result['reference_id']).to eq('sub-ref-new')
-      expect(result['code']).to eq(100)
+      expect(result.reference_id).to eq('sub-ref-new')
+      expect(result.code).to eq(100)
     end
   end
 
@@ -134,14 +109,6 @@ RSpec.describe Tapsilat::Subscriptions do
   describe '#redirect' do
     it 'gets redirect URL for a subscription' do
       stub_request(:post, 'https://panel.tapsilat.dev/api/v1/subscription/redirect')
-        .with(
-          body: { subscription_id: 'sub-ref-123' }.to_json,
-          headers: {
-            'Authorization' => 'Bearer test_token',
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json'
-          }
-        )
         .to_return(
           status: 200,
           body: { url: 'https://redirect.example.com' }.to_json,

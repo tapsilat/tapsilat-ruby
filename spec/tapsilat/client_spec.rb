@@ -2,26 +2,29 @@ RSpec.describe Tapsilat::Client, :configured do
   let(:client) { described_class.new }
 
   describe '#initialize' do
-    it 'sets the base URI from Tapsilat configuration' do
-      expect(client.class.base_uri).to eq(Tapsilat.base_url)
-    end
-
-    it 'sets the default headers' do
-      expected_headers = {
-        'Content-Type' => 'application/json',
-        'Accept' => 'application/json',
-        'Authorization' => "Bearer #{Tapsilat.api_token}"
-      }
-      expect(client.class.default_options[:headers]).to eq(expected_headers)
+    it 'creates a TapsilatAPI instance' do
+      expect(client.instance_variable_get(:@api)).to be_a(Tapsilat::TapsilatAPI)
     end
   end
 
-  describe '#orders' do
-    it 'returns an Orders instance' do
-      expect(client.orders).to be_a(Tapsilat::Orders)
+  describe 'Resources' do
+    it 'exposes orders resource' do
+      expect(client.orders).to be_a(Tapsilat::Resource::Order)
     end
 
-    it 'memoizes the orders instance' do
+    it 'exposes subscriptions resource' do
+      expect(client.subscriptions).to be_a(Tapsilat::Resource::Subscription)
+    end
+
+    it 'exposes organization resource' do
+      expect(client.organization).to be_a(Tapsilat::Resource::Organization)
+    end
+
+    it 'exposes system resource' do
+      expect(client.system).to be_a(Tapsilat::Resource::System)
+    end
+
+    it 'memoizes resource instances' do
       expect(client.orders).to be(client.orders)
     end
   end

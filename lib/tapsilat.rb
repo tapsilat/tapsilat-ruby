@@ -4,9 +4,39 @@ require_relative 'tapsilat/version'
 module Tapsilat
   class Error < StandardError; end
   class ConfigurationError < Error; end
+  class APIException < Error
+    attr_reader :status_code, :api_code, :error_msg
+
+    def initialize(status_code, api_code, error_msg)
+      @status_code = status_code
+      @api_code = api_code
+      @error_msg = error_msg
+      super("HTTP #{status_code} [API #{api_code}]: #{error_msg}")
+    end
+  end
+
+  # Legacy Error Aliases for compatibility with existing tests
+  class OrderAPIError < Error; end
+  class OrderValidationError < OrderAPIError; end
+  class OrderNotFoundError < OrderAPIError; end
+  class SubscriptionAPIError < Error; end
 
   class << self
-    attr_accessor :base_url, :api_token
+    def base_url
+      @base_url ||= ENV['TAPSILAT_BASE_URL']
+    end
+
+    def base_url=(value)
+      @base_url = value
+    end
+
+    def api_token
+      @api_token ||= ENV['TAPSILAT_API_KEY'] || ENV['TAPSILAT_API_TOKEN']
+    end
+
+    def api_token=(value)
+      @api_token = value
+    end
 
     def configure
       yield self
@@ -23,8 +53,6 @@ module Tapsilat
   end
 end
 
+require_relative 'tapsilat/api'
+require_relative 'tapsilat/models'
 require_relative 'tapsilat/client'
-require_relative 'tapsilat/orders'
-require_relative 'tapsilat/subscriptions'
-require_relative 'tapsilat/organization'
-require_relative 'tapsilat/health'
