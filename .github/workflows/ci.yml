@@ -35,7 +35,7 @@ jobs:
         TAPSILAT_API_TOKEN: ${{ secrets.TAPSILAT_API_TOKEN }}
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v6
       if: matrix.ruby-version == '3.4'
       with:
         file: ./coverage/coverage.xml
