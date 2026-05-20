@@ -242,6 +242,18 @@ module Tapsilat
       _make_request('GET', "/organization/suborganizations/#{id}")
     end
 
+    def get_organization_suborganization_details(id)
+      get_organization_suborganization(id)
+    end
+
+    def get_organization_suborganization_submerchants(id)
+      _make_request('GET', "/organization/suborganizations/#{id}/submerchant")
+    end
+
+    def get_organization_currency_presets
+      _make_request('GET', '/organization/currency-presets')
+    end
+
     # --- Subscription Endpoints ---
 
     def get_subscription(request)

@@ -306,6 +306,18 @@ module Tapsilat
         @api.get_organization_suborganization(id)
       end
 
+      def suborganization_details(id)
+        @api.get_organization_suborganization_details(id)
+      end
+
+      def suborganization_submerchants(id)
+        @api.get_organization_suborganization_submerchants(id)
+      end
+
+      def currency_presets
+        @api.get_organization_currency_presets
+      end
+
       def create_user_token(request)
         @api.create_organization_user_token(request)
       end
